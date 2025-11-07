@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.paycorp.asba</groupId>
+    <artifactId>asba-api-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <parent>
+        <groupId>io.paycorp</groupId>
+        <artifactId>paycorp-parent</artifactId>
+        <version>3.2.0</version>
+        <relativePath />
+    </parent>
+    <name>asba-api-parent</name>
+    <description>Parent project for ASBA public APIs</description>
+    <properties>
+        <!-- enforce java 21, comes from parent pom -->
+        <openjdk.version>21</openjdk.version>
+        <sonar.organization>paycorp-io</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <!-- dependency versions if any -->
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.paycorp.asba</groupId>
+                <artifactId>model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>external.atlassian.jgitflow</groupId>
+                <artifactId>jgitflow-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/*.pkcs12</exclude> <!-- Exclude files with .bin extension -->
+                </excludes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.pkcs12</include> <!-- Exclude files with .bin extension -->
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+    </build>
+    <modules>
+        <module>../public-api-server</module>
+        <module>../model</module>
+    </modules>
+    <scm>
+        <developerConnection>scm:git:https://github.com/paycorp-io/blank-canvas.git</developerConnection>
+        <connection>scm:git:https://github.com/paycorp-io/blank-canvas.git</connection>
+        <url>scm:git:https://github.com/paycorp-io/blank-canvas.git</url>
+    </scm>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/paycorp-io/blank-canvas</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </distributionManagement>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/paycorp-io/license</url>
+        </pluginRepository>
+    </pluginRepositories>
+</project>

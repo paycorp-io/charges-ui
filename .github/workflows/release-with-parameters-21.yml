@@ -1,0 +1,73 @@
+on:
+  workflow_call:
+    inputs:
+      parent-folder-path:
+        required: true
+        type: string
+      sonar-project-key:
+        required: true
+        type: string
+jobs:
+  build:
+    name: Shared Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          ref: main
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.9.7  
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' 
+          cache: 'maven'
+          java-version: 21
+      - name: Cache SonarCloud packages
+        uses: actions/cache@4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Perform Pre-Release
+        run: |
+          git push origin -d release
+          git checkout -b release
+          git push origin release
+          git push origin -d pre-release
+          git checkout -b pre-release
+          git push origin pre-release          
+      - name: Perform Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # used by sonar
+          USER_NAME: ${{ secrets.GHA_USER }}
+          ACCESS_TOKEN: ${{ secrets.GHA_PASS }}
+          JASYPT_ENCRYPTOR_PASSWORD: ${{ secrets.JASYPT_ENCRYPTOR }} # required for build
+          PARENT_FOLDER_PATH: ${{ inputs.parent-folder-path }}        
+        working-directory: ./${{ inputs.parent-folder-path }}
+        run: mvn -DautoVersionSubmodules=true -Dmaven.javadoc.skip=true -Dgit.user=${{ secrets.GHA_USER }} -Dgit.password=${{ secrets.GHA_PASS }} -DreleaseVersion=${{ github.event.inputs.version }} -DdevelopmentVersion=${{ github.event.inputs.build }} -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B jgitflow:release-start jgitflow:release-finish
+      - name: Push changes to Git
+        working-directory: ./${{ inputs.parent-folder-path }}
+        run: git push origin release pre-release --tags
+      - name: Deploy to Github Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # used by sonar
+          USER_NAME: ${{ secrets.GHA_USER }}
+          ACCESS_TOKEN: ${{ secrets.GHA_PASS }}
+          JASYPT_ENCRYPTOR_PASSWORD: ${{ secrets.JASYPT_ENCRYPTOR }} # required for build
+          PARENT_FOLDER_PATH: ${{ inputs.parent-folder-path }}        
+        run: | 
+                git checkout release
+                cd $PARENT_FOLDER_PATH
+                mvn clean deploy -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml 
